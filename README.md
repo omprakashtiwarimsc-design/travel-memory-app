@@ -79,6 +79,7 @@ Before you start, make sure you have:
 3. Enter `0.0.0.0/0` (allows access from anywhere - needed for EC2 instances)
 4. Click **Confirm**
 
+**MongoDB Network Access Configuration:**
 ![MongoDB Network Setup](https://github.com/user-attachments/assets/fe70bf0b-4614-4f49-bc71-a1383a48a2a8)
 
 ### Step 4: Get Connection String
@@ -88,6 +89,7 @@ Before you start, make sure you have:
 3. Select **Drivers**
 4. Copy the connection string
 
+**MongoDB Connection String Page:**
 ![MongoDB Connection](https://github.com/user-attachments/assets/78d8654c-c4b6-45df-8ed5-92034701df8c)
 
 **Your connection string will look like:**
@@ -108,6 +110,7 @@ mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/travelmemory?retr
 5. Choose instance type: `t2.micro` (free tier eligible)
 6. Launch instance
 
+**AWS EC2 Instances Dashboard:**
 ![EC2 Instances](https://github.com/user-attachments/assets/5ea7dfd3-5733-4827-bc7d-76444530d4cf)
 
 ### Step 2: Connect to Backend Instance
@@ -154,16 +157,21 @@ PORT=3000
 - Press `Y`
 - Press `Enter`
 
-### Step 4: Run the backend as a systemd service (no PM2)
+### Step 4: Run the Backend as a systemd Service
+
+Create the systemd service file:
 
 ```bash
-Create /etc/systemd/system/travelmemory-backend.service
+sudo nano /etc/systemd/system/travelmemory-backend.service
 ```
-- Add Env Details
-  ```bash
-  [Unit]
+
+Add the following configuration:
+
+```ini
+[Unit]
 Description=TravelMemory Backend
 After=network.target
+
 [Service]
 Type=simple
 User=ubuntu
@@ -172,43 +180,64 @@ EnvironmentFile=/home/ubuntu/TravelMemory/backend/.env
 ExecStart=/usr/bin/node index.js
 Restart=always
 RestartSec=5
+
 [Install]
 WantedBy=multi-user.target
 ```
-- start the services
-``` bash
+
+Save and exit (Ctrl + X, Y, Enter)
+
+Start the backend service:
+
+```bash
 sudo systemctl daemon-reload
 sudo systemctl enable --now travelmemory-backend
 sudo systemctl status travelmemory-backend
 ```
 
-- Setup Nginx reverse proxy
-- Edit /etc/nginx/sites-available/default, replace the default location / with:
-  ```bash
-  location / {
+### Step 5: Setup Nginx Reverse Proxy
+
+Edit the Nginx default configuration:
+
+```bash
+sudo nano /etc/nginx/sites-available/default
+```
+
+Replace the location block with:
+
+```nginx
+location / {
     proxy_pass http://localhost:3000;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
 }
 ```
-- Refer attached image
 
-<img width="1470" height="956" alt="Screenshot 2026-10-12 at 1 58 35 PM" src="https://github.com/user-attachments/assets/9174e0d9-b295-4f84-b44e-025750e1747b" />
+**Nginx Configuration File Example:**
+![Nginx Configuration](https://github.com/user-attachments/assets/9174e0d9-b295-4f84-b44e-025750e1747b)
 
+Restart Nginx:
 
-
-- start the services
 ```bash
 sudo nginx -t
 sudo systemctl restart nginx
 ```
 
-- verify with below command
-  ``` bash
-  curl http://<backend-master-public-ip>/hello
-  --> Hello World!
-  ```
+### Step 6: Verify Backend is Running
+
+```bash
+curl http://<backend-master-public-ip>/hello
+```
+
+Expected output:
+```
+Hello World!
+```
+
+---
+
 ## 🎨 Frontend Setup
 
 ### Step 1: Launch Frontend EC2 Instance
@@ -246,39 +275,82 @@ cd TravelMemory/frontend
 npm install
 ```
 
-### Step 3: Configure Backend URL (If Needed)
+### Step 3: Configure Backend URL
 
-Edit your frontend configuration to point to your backend:
+Edit the frontend configuration file to point to your backend server:
 
 ```bash
-Open src/url.js and point baseUrl at the backend master (this is an interim value — you'll repoint it once the backend load balancer exists,
+nano src/url.js
 ```
 
-<img width="2940" height="1640" alt="image" src="https://github.com/user-attachments/assets/38d43f8d-0c06-4520-99a7-c8f24175ef8a" />
+Update the `baseUrl` to your backend EC2 instance IP:
 
-<img width="2940" height="1912" alt="image" src="https://github.com/user-attachments/assets/9cc4f7de-1f0f-4372-80c3-4b439ca09fe9" />
+```javascript
+const baseUrl = "http://<backend-master-public-ip>:3000";
+```
+
+**Frontend Configuration File (src/url.js):**
+![Frontend URL Configuration](https://github.com/user-attachments/assets/38d43f8d-0c06-4520-99a7-c8f24175ef8a)
+
+**Example Configuration:**
+![Configuration Example](https://github.com/user-attachments/assets/9cc4f7de-1f0f-4372-80c3-4b439ca09fe9)
 
 ### Step 4: Build Frontend
+
 ```bash
 npm install
 npm run build
+```
+
+Copy the build to Nginx web root:
+
+```bash
 sudo rm -rf /var/www/html/*
 sudo cp -r build/* /var/www/html/
 sudo systemctl restart nginx
 ```
 
-### Step 5: Verify the Baseline Before Imaging
-```bash
+### Step 5: Verify the Frontend
+
+Open your browser and go to:
+
+```
 http://<frontend-master-public-ip>
 ```
 
-### Step 6: create AMIs
+You should see your Travel Memory App loaded.
 
-<img width="2918" height="674" alt="image" src="https://github.com/user-attachments/assets/37fcf80c-2c5f-4e8e-b3b8-a1b31632e189" />
+### Step 6: Create AMI (Amazon Machine Images)
 
-### Step 7: Launch Instance #2 From Each AMI
- - Notice frontend-2 and backend-2 instances in the image was created from AMIs respectively
-<img width="1463" height="447" alt="Screenshot 2026-10-12 at 2 20 54 PM" src="https://github.com/user-attachments/assets/0691ab82-3eee-43dd-b104-0387428ee7bf" />
+For load balancing and redundancy, create AMI snapshots of both instances:
+
+**AWS AMI Creation Process:**
+![Create AMI](https://github.com/user-attachments/assets/37fcf80c-2c5f-4e8e-b3b8-a1b31632e189)
+
+Steps to create AMI:
+1. Right-click on the EC2 instance
+2. Select **Image and templates** → **Create image**
+3. Give it a meaningful name (e.g., `travelmemory-backend-v1`, `travelmemory-frontend-v1`)
+4. Click **Create image**
+
+### Step 7: Launch Additional Instances from AMI
+
+Once AMIs are created, you can launch additional instances:
+
+**Multiple Instances from AMI:**
+![Multiple Instances](https://github.com/user-attachments/assets/0691ab82-3eee-43dd-b104-0387428ee7bf)
+
+This creates redundancy and enables load balancing across multiple backend and frontend servers.
+
+### Step 8: Configure Nginx for Frontend
+
+Update your Nginx configuration to serve the React app:
+
+```bash
+sudo nano /etc/nginx/sites-available/default
+```
+
+Use this configuration:
 
 ```nginx
 server {
@@ -287,7 +359,7 @@ server {
 
     server_name _;
 
-    root /home/ubuntu/TravelMemory/frontend/build;
+    root /var/www/html;
     index index.html;
 
     location / {
@@ -305,12 +377,17 @@ server {
 }
 ```
 
-### Step 6: Restart Nginx
+### Step 9: Restart Nginx
+
 ```bash
 sudo systemctl restart nginx
 ```
 
-Frontend should now be accessible at `http://<your-frontend-ec2-ip>`
+Frontend should now be accessible at:
+
+```
+http://<your-frontend-ec2-ip>
+```
 
 ---
 
@@ -361,16 +438,24 @@ sudo certbot --nginx -d yourdomain.com
 - ✅ Run `npm install` again
 - ✅ Check `.env` file exists and has correct values
 - ✅ Check port 3000 is not already in use: `sudo lsof -i :3000`
+- ✅ Check systemd service status: `sudo systemctl status travelmemory-backend`
 
 ### Frontend Not Loading
 - ✅ Check Nginx is running: `sudo systemctl status nginx`
-- ✅ Verify backend URL in frontend config
+- ✅ Verify backend URL in `src/url.js`
 - ✅ Check browser console for errors (F12)
+- ✅ Check that frontend build exists in `/var/www/html`
 
 ### EC2 Connection Issues
 - ✅ Verify security group allows inbound traffic on ports 80, 443, 3000
 - ✅ Check EC2 instance is running
 - ✅ Verify SSH key permissions: `chmod 400 your-key.pem`
+- ✅ Check MongoDB Atlas network allows EC2 IP
+
+### Images Not Loading on Frontend
+- ✅ Verify backend API is running and accessible
+- ✅ Check CORS settings on backend
+- ✅ Verify database has travel data stored
 
 ---
 
@@ -391,6 +476,7 @@ sudo certbot --nginx -d yourdomain.com
 - Keep your MongoDB credentials secure
 - Regularly backup your MongoDB database
 - Monitor EC2 instance costs
+- The frontend should be served from `/var/www/html` by Nginx
 
 ---
 
