@@ -291,7 +291,6 @@ const baseUrl = "http://<backend-master-public-ip>:3000";
 ```
 
 **Frontend Configuration File (src/url.js):**
-![Frontend URL Configuration](https://github.com/user-attachments/assets/38d43f8d-0c06-4520-99a7-c8f24175ef8a)
 
 **Example Configuration:**
 ![Configuration Example](https://github.com/user-attachments/assets/9cc4f7de-1f0f-4372-80c3-4b439ca09fe9)
