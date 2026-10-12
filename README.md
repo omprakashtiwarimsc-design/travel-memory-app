@@ -164,7 +164,6 @@ Create /etc/systemd/system/travelmemory-backend.service
   [Unit]
 Description=TravelMemory Backend
 After=network.target
-
 [Service]
 Type=simple
 User=ubuntu
@@ -173,7 +172,6 @@ EnvironmentFile=/home/ubuntu/TravelMemory/backend/.env
 ExecStart=/usr/bin/node index.js
 Restart=always
 RestartSec=5
-
 [Install]
 WantedBy=multi-user.target
 ```
@@ -195,7 +193,9 @@ sudo systemctl status travelmemory-backend
 }
 ```
 - Refer attached image
-<img width="2940" height="1912" alt="image" src="https://github.com/user-attachments/assets/7679b064-8109-417d-9529-ed1b8c0f2963" />
+
+<img width="1470" height="956" alt="Screenshot 2026-10-12 at 1 58 35 PM" src="https://github.com/user-attachments/assets/9174e0d9-b295-4f84-b44e-025750e1747b" />
+
 
 
 - start the services
