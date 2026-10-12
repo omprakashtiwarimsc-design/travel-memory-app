@@ -96,6 +96,7 @@ Before you start, make sure you have:
 ```
 mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/travelmemory?retryWrites=true&w=majority
 ```
+<img width="1174" height="120" alt="image" src="https://github.com/user-attachments/assets/abf24039-274a-4e04-93e6-10bf493e34a1" />
 
 ---
 
@@ -320,7 +321,37 @@ http://<frontend-master-public-ip>
 
 You should see your Travel Memory App loaded.
 
-### Step 6: Create AMI (Amazon Machine Images)
+### Step 6: Configure Nginx for Frontend
+
+Update your Nginx configuration to serve the React app:
+
+```bash
+sudo nano /etc/nginx/sites-available/default
+```
+
+Use this configuration:
+
+```sudo tee /etc/nginx/sites-available/default > /dev/null <<'EOF'
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+
+    root /var/www/html;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+EOF
+
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+
+### Step 7: Create AMI (Amazon Machine Images)
 
 For load balancing and redundancy, create AMI snapshots of both instances:
 
@@ -333,7 +364,7 @@ Steps to create AMI:
 3. Give it a meaningful name (e.g., `travelmemory-backend-v1`, `travelmemory-frontend-v1`)
 4. Click **Create image**
 
-### Step 7: Launch Additional Instances from AMI
+### Step 8: Launch Additional Instances from AMI
 
 Once AMIs are created, you can launch additional instances:
 
@@ -342,52 +373,27 @@ Once AMIs are created, you can launch additional instances:
 
 This creates redundancy and enables load balancing across multiple backend and frontend servers.
 
-### Step 8: Configure Nginx for Frontend
 
-Update your Nginx configuration to serve the React app:
+### Step 9: Backend Target Group + Load Balancer
 
-```bash
-sudo nano /etc/nginx/sites-available/default
-```
 
-Use this configuration:
+<img width="1470" height="956" alt="Screenshot 2026-10-12 at 3 02 35 PM" src="https://github.com/user-attachments/assets/ee21e030-78ad-4cf6-93d1-6ce8e4d6015a" />
 
-```nginx
-server {
-    listen 80 default_server;
-    listen [::]:80 default_server;
+<img width="1470" height="956" alt="Screenshot 2026-10-12 at 8 31 54 AM" src="https://github.com/user-attachments/assets/f021a4d1-0d6e-4496-8e1b-639c7ebe7e11" />
 
-    server_name _;
 
-    root /var/www/html;
-    index index.html;
 
-    location / {
-        try_files $uri /index.html;
-    }
+### Step 10: Frontend Target Group + Load Balancer
 
-    location /api {
-        proxy_pass http://<your-backend-ec2-ip>:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-```
+<img width="1470" height="956" alt="Screenshot 2026-10-12 at 8 34 20 AM" src="https://github.com/user-attachments/assets/1f5c32bd-5f66-4a9e-8f46-68d65c7b6486" />
 
-### Step 9: Restart Nginx
+<img width="1470" height="820" alt="Screenshot 2026-10-12 at 1 49 34 PM" src="https://github.com/user-attachments/assets/3f0ad785-2aa6-4036-be86-4f4766d1798b" />
 
-```bash
-sudo systemctl restart nginx
-```
 
-Frontend should now be accessible at:
+### Step 11:Point Frontend at the Backend Load Balancer
 
-```
-http://<your-frontend-ec2-ip>
-```
+<img width="1470" height="956" alt="Screenshot 2026-10-12 at 1 59 55 PM" src="https://github.com/user-attachments/assets/9a424daf-2c9a-42ac-a09f-5e2dc3b40597" />
+
 
 ---
 
@@ -399,8 +405,8 @@ http://<your-frontend-ec2-ip>
 ```env
 MONGO_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/travelmemory?retryWrites=true&w=majority
 PORT=3000
-NODE_ENV=production
 ```
+
 
 ### MongoDB Compass (Optional)
 
@@ -411,21 +417,8 @@ To view and manage your database locally:
 3. Click **Connect**
 4. You can now browse your database
 
----
 
-## 🌐 Deployment & Domain Setup
 
-1. Get a domain from a domain registrar (or use AWS Route 53)
-2. Point the domain A record to your frontend EC2 instance's public IP
-3. Update your Nginx configuration with your domain name
-4. Configure SSL with Let's Encrypt (optional but recommended):
-
-```bash
-sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d yourdomain.com
-```
-
----
 
 ## 🔧 Troubleshooting
 
