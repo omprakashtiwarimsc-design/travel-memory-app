@@ -154,22 +154,61 @@ PORT=3000
 - Press `Y`
 - Press `Enter`
 
-### Step 4: Start Backend Server
+### Step 4: Run the backend as a systemd service (no PM2)
 
 ```bash
-npm start
+Create /etc/systemd/system/travelmemory-backend.service
+```
+- Add Env Details
+  ```bash
+  [Unit]
+Description=TravelMemory Backend
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/TravelMemory/backend
+EnvironmentFile=/home/ubuntu/TravelMemory/backend/.env
+ExecStart=/usr/bin/node index.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+- start the services
+``` bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now travelmemory-backend
+sudo systemctl status travelmemory-backend
 ```
 
-Or if you want to run in development mode with auto-reload:
+- Setup Nginx reverse proxy
+- Edit /etc/nginx/sites-available/default, replace the default location / with:
+  ```bash
+  location / {
+    proxy_pass http://localhost:3000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+}
+```
+- Refer attached image
+<img width="2940" height="1912" alt="image" src="https://github.com/user-attachments/assets/7679b064-8109-417d-9529-ed1b8c0f2963" />
 
+
+- start the services
 ```bash
-npm run dev
+sudo nginx -t
+sudo systemctl restart nginx
 ```
 
-Backend should now be running on `http://<your-ec2-backend-ip>:3000`
-
----
-
+- verify with below command
+  ``` bash
+  curl http://<backend-master-public-ip>/hello
+  --> Hello World!
+  ```
 ## 🎨 Frontend Setup
 
 ### Step 1: Launch Frontend EC2 Instance
@@ -212,27 +251,34 @@ npm install
 Edit your frontend configuration to point to your backend:
 
 ```bash
-nano src/config.js
-# or wherever your API endpoint is defined
+Open src/url.js and point baseUrl at the backend master (this is an interim value — you'll repoint it once the backend load balancer exists,
 ```
 
-Update the backend API URL:
-```javascript
-const API_URL = "http://<your-backend-ec2-ip>:3000";
-```
+<img width="2940" height="1640" alt="image" src="https://github.com/user-attachments/assets/38d43f8d-0c06-4520-99a7-c8f24175ef8a" />
+
+<img width="2940" height="1912" alt="image" src="https://github.com/user-attachments/assets/9cc4f7de-1f0f-4372-80c3-4b439ca09fe9" />
 
 ### Step 4: Build Frontend
 ```bash
+npm install
 npm run build
+sudo rm -rf /var/www/html/*
+sudo cp -r build/* /var/www/html/
+sudo systemctl restart nginx
 ```
 
-### Step 5: Configure Nginx to Serve Frontend
-
+### Step 5: Verify the Baseline Before Imaging
 ```bash
-sudo nano /etc/nginx/sites-available/default
+http://<frontend-master-public-ip>
 ```
 
-Replace the configuration with:
+### Step 6: create AMIs
+
+<img width="2918" height="674" alt="image" src="https://github.com/user-attachments/assets/37fcf80c-2c5f-4e8e-b3b8-a1b31632e189" />
+
+### Step 7: Launch Instance #2 From Each AMI
+ - Notice frontend-2 and backend-2 instances in the image was created from AMIs respectively
+<img width="1463" height="447" alt="Screenshot 2026-10-12 at 2 20 54 PM" src="https://github.com/user-attachments/assets/0691ab82-3eee-43dd-b104-0387428ee7bf" />
 
 ```nginx
 server {
