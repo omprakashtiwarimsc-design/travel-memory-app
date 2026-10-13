@@ -393,6 +393,19 @@ This creates redundancy and enables load balancing across multiple backend and f
 
 <img width="1470" height="956" alt="Screenshot 2026-10-12 at 1 59 55 PM" src="https://github.com/user-attachments/assets/9a424daf-2c9a-42ac-a09f-5e2dc3b40597" />
 
+### Step 11: DNS Setup
+
+<img width="1470" height="820" alt="Screenshot 2026-10-12 at 1 40 10 PM" src="https://github.com/user-attachments/assets/52170ed7-ec34-4fca-a34a-0d5d4ad40ab1" />
+
+### Final Verification 
+-- adding record and observing the same at database end.
+<img width="1470" height="956" alt="Screenshot 2026-10-12 at 1 57 28 PM" src="https://github.com/user-attachments/assets/cdcaed41-c619-4a02-8795-b6f265b491d5" />
+
+-- Application is now accessible from frontend load balancer and my dns website (i.e : aws-ninjas.store) 
+<img width="1470" height="956" alt="Screenshot 2026-10-12 at 1 57 50 PM" src="https://github.com/user-attachments/assets/222a908f-edc7-47f7-8c91-7c6a942b2a1b" />
+
+<img width="1466" height="520" alt="Screenshot 2026-10-12 at 2 01 04 PM" src="https://github.com/user-attachments/assets/4e85e792-1f8e-4595-a713-83115514486f" />
+
 
 ---
 
