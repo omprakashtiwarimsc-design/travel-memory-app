@@ -96,7 +96,8 @@ Before you start, make sure you have:
 ```
 mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/travelmemory?retryWrites=true&w=majority
 ```
-<img width="1174" height="120" alt="image" src="https://github.com/user-attachments/assets/abf24039-274a-4e04-93e6-10bf493e34a1" />
+<img width="1174" height="120" alt="image" src="https://github.com/user-attachments/assets/496eafd7-6387-4264-b263-0a03c5cd59e3" />
+
 
 ---
 
